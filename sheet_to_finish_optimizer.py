@@ -3,6 +3,7 @@ import json
 import os
 
 RATE_FILE = "rates.json"
+FLEX_FILE = "flex_rates.json"
 
 default_rates = {
     "Gloss": { "500": 400, "1000": 700 },
@@ -11,16 +12,33 @@ default_rates = {
     "Normal": { "500": 300, "1000": 500 }
 }
 
+default_flex = {
+    "Normal Flex": 12,
+    "Backlit Flex": 25,
+    "Blackout Flex": 35,
+    "Vinyl Print": 40
+}
+
 def load_rates():
     if os.path.exists(RATE_FILE):
         with open(RATE_FILE, "r") as f:
             return json.load(f)
-    else:
-        return default_rates.copy()
+    return default_rates.copy()
 
 def save_rates(rates):
     with open(RATE_FILE, "w") as f:
         json.dump(rates, f, indent=4)
+
+def load_flex_types():
+    flex = default_flex.copy()
+    if os.path.exists(FLEX_FILE):
+        with open(FLEX_FILE, "r") as f:
+            flex.update(json.load(f))
+    return flex
+
+def save_flex_types(data):
+    with open(FLEX_FILE, "w") as f:
+        json.dump(data, f, indent=2)
 
 def rate_estimator():
     st.subheader("🧾 Visiting Card Rate Estimator")
@@ -65,33 +83,21 @@ def sheet_size_optimizer():
     cols1 = sw_mm // fw_mm
     rows1 = sh_mm // fh_mm
     total1 = cols1 * rows1
-    used_w1 = cols1 * fw_mm
-    used_h1 = rows1 * fh_mm
-    rem_w1 = sw_mm - used_w1
-    rem_h1 = sh_mm - used_h1
 
     cols2 = sw_mm // fh_mm
     rows2 = sh_mm // fw_mm
     total2 = cols2 * rows2
-    used_w2 = cols2 * fh_mm
-    used_h2 = rows2 * fw_mm
-    rem_w2 = sw_mm - used_w2
-    rem_h2 = sh_mm - used_h2
 
     if total1 >= total2:
         layout = "Original Orientation"
         total, rows, cols = total1, rows1, cols1
-        used_w, used_h, rem_w, rem_h = used_w1, used_h1, rem_w1, rem_h1
     else:
         layout = "Rotated Orientation"
         total, rows, cols = total2, rows2, cols2
-        used_w, used_h, rem_w, rem_h = used_w2, used_h2, rem_w2, rem_h2
 
     st.success(f"✅ Best Layout: {layout}")
     st.write(f"🧾 Total Finish Sizes: **{int(total)}**")
     st.write(f"📏 Rows: {int(rows)} | Columns: {int(cols)}")
-    st.write(f"🟩 Used Area: {used_w:.1f} mm x {used_h:.1f} mm")
-    st.write(f"⬜ Remaining Area: {rem_w:.1f} mm x {rem_h:.1f} mm")
 
 def update_rates():
     st.subheader("🛠️ Update Visiting Card Rates")
@@ -105,35 +111,37 @@ def update_rates():
         save_rates(rates)
         st.success("✅ Rates updated successfully!")
 
+def update_flex_rates():
+    st.subheader("🛠️ Update Flex Types & Rates")
+    flex = load_flex_types()
+    selected_type = st.selectbox("Select Flex Type to Update", list(flex.keys()))
+    new_rate = st.number_input(f"New Rate for {selected_type} (₹/sq.ft)", value=flex[selected_type], min_value=1)
+    if st.button("Update Rate"):
+        flex[selected_type] = new_rate
+        save_flex_types(flex)
+        st.success(f"✅ Updated {selected_type} to ₹{new_rate}/sq.ft")
 
-
-def load_flex_rates():
-    default_flex_rates = {
-        "Normal Flex": 12,
-        "Backlit Flex": 25,
-        "Blackout Flex": 35,
-        "Vinyl Print": 40
-    }
-    if os.path.exists("flex_rates.json"):
-        with open("flex_rates.json", "r") as f:
-            return json.load(f)
-    return default_flex_rates
-
-def save_flex_rates(rates):
-    with open("flex_rates.json", "w") as f:
-        json.dump(rates, f, indent=4)
+    st.markdown("---")
+    new_name = st.text_input("Add New Flex Type Name")
+    new_rate_val = st.number_input("New Type Rate (₹/sq.ft)", value=1, min_value=1)
+    if st.button("Add Flex Type"):
+        if new_name.strip():
+            flex[new_name.strip()] = new_rate_val
+            save_flex_types(flex)
+            st.success(f"✅ Added {new_name} at ₹{new_rate_val}/sq.ft")
 
 def flex_estimator():
     st.subheader("📏 Flex Rate Estimator")
-    flex_rates = load_flex_rates()
-    options_with_rates = [f"{k} (₹{v}/sq.ft)" for k, v in flex_rates.items()]
-    choice = st.selectbox("Select Flex Type", options_with_rates)
-    flex_type = choice.split(" (")[0]
-    rate_per_sqft = flex_rates[flex_type]
+    flex_types = load_flex_types()
+    flex_list = [f"{k} (₹{v}/sq.ft)" for k, v in flex_types.items()]
+    choice = st.selectbox("Select Flex Type", flex_list)
+    flex_name = choice.split(" (")[0]
+    rate_per_sqft = flex_types[flex_name]
 
     num_flex = st.number_input("Number of Flex Pieces", min_value=1, value=1, step=1)
     dimension_unit = st.radio("Dimension Unit", ("Feet", "Inches"))
     total_sqft = 0
+
     for i in range(1, num_flex + 1):
         st.markdown(f"**Flex {i}**")
         width = st.number_input(f"Width of Flex {i} ({dimension_unit})", min_value=0.1, key=f"w{i}")
@@ -143,19 +151,33 @@ def flex_estimator():
         area = w_ft * h_ft
         total_sqft += area
         st.write(f"📐 Area of Flex {i}: {area:.2f} sq.ft")
+
     with_frame = st.checkbox("Include Frame (₹35/sq.ft extra)?")
     frame_rate = 35 if with_frame else 0
-    total_rate = (rate_per_sqft + frame_rate) * total_sqft
+    total_price = (rate_per_sqft + frame_rate) * total_sqft
+
     st.markdown("---")
     st.write(f"🧮 **Total Area:** {total_sqft:.2f} sq.ft")
-    st.write(f"💰 **Total Price:** ₹{total_rate:.2f}")
+    st.write(f"💰 **Total Price:** ₹{total_price:.2f}")
 
-def update_flex_rates():
-    st.subheader("🛠️ Update Flex Rates")
-    flex_rates = load_flex_rates()
-    flex = st.selectbox("Select Flex Type to Update", list(flex_rates.keys()))
-    new_rate = st.number_input(f"New Rate for {flex} (₹/sq.ft)", value=flex_rates[flex])
-    if st.button("Save Flex Rate"):
-        flex_rates[flex] = new_rate
-        save_flex_rates(flex_rates)
-        st.success(f"✅ Updated rate for {flex} to ₹{new_rate}/sq.ft")
+# Main UI
+st.title("🖨️ Vinaayaga Printers Toolkit")
+
+option = st.sidebar.radio("Choose Tool", [
+    "Visiting Card Rate Estimator",
+    "Sheet Size Optimizer",
+    "Flex Rate Estimator",
+    "Update Visiting Card Rates",
+    "Update Flex Rates"
+])
+
+if option == "Visiting Card Rate Estimator":
+    rate_estimator()
+elif option == "Sheet Size Optimizer":
+    sheet_size_optimizer()
+elif option == "Flex Rate Estimator":
+    flex_estimator()
+elif option == "Update Visiting Card Rates":
+    update_rates()
+elif option == "Update Flex Rates":
+    update_flex_rates()
