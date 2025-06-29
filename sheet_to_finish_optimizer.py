@@ -1,4 +1,9 @@
-import streamlit as st
+# Rewriting the full revised Streamlit app with:
+# - Visiting Card Estimator
+# - Sheet Size Optimizer (separate mm/inch for sheet and finish)
+# - Rate Update Module
+
+final_toolkit_code = '''import streamlit as st
 import json
 import os
 
@@ -22,36 +27,27 @@ def save_rates(rates):
     with open(RATE_FILE, "w") as f:
         json.dump(rates, f, indent=4)
 
-# ---------------------------
 # 1. Visiting Card Estimator
-# ---------------------------
 def rate_estimator():
     st.subheader("🧾 Visiting Card Rate Estimator")
     rates = load_rates()
-
     finish = st.selectbox("Select Finish Type", list(rates.keys()))
     quantity = st.selectbox("Select Quantity", [500, 1000])
     base_rate = rates[finish][str(quantity)]
-
     st.info(f"Base Rate for {quantity} {finish} cards: ₹{base_rate}")
-
     if st.radio("Generate final estimate?", ("Yes", "No")) == "Yes":
         design_charge = st.number_input("Design Charges (₹)", min_value=0, value=0)
         extra_charge = st.number_input("Extra/Add-on Charges (₹)", min_value=0, value=0)
         discount = st.number_input("Discount (₹)", min_value=0, value=0)
         include_tax = st.checkbox("Include GST (18%)")
-
         subtotal = base_rate + design_charge + extra_charge - discount
         tax = subtotal * 0.18 if include_tax else 0
         total = subtotal + tax
-
         st.success(f"💰 Final Estimate: ₹{total:.2f}")
         if include_tax:
             st.caption(f"Includes ₹{tax:.2f} GST (SGST + CGST)")
 
-# ---------------------------
 # 2. Sheet-to-Finish Optimizer
-# ---------------------------
 def sheet_size_optimizer():
     st.subheader("📐 Sheet-to-Finish Size Optimizer")
 
@@ -74,7 +70,6 @@ def sheet_size_optimizer():
     fw_mm = to_mm(finish_width, finish_unit)
     fh_mm = to_mm(finish_height, finish_unit)
 
-    # Orientation 1: Finish as given
     cols1 = sw_mm // fw_mm
     rows1 = sh_mm // fh_mm
     total1 = cols1 * rows1
@@ -83,7 +78,6 @@ def sheet_size_optimizer():
     rem_w1 = sw_mm - used_w1
     rem_h1 = sh_mm - used_h1
 
-    # Orientation 2: Rotate finish
     cols2 = sw_mm // fh_mm
     rows2 = sh_mm // fw_mm
     total2 = cols2 * rows2
@@ -107,13 +101,39 @@ def sheet_size_optimizer():
     st.write(f"🟩 Used Area: {used_w:.1f} mm x {used_h:.1f} mm")
     st.write(f"⬜ Remaining Area: {rem_w:.1f} mm x {rem_h:.1f} mm")
 
-# ---------------------------
-# 3. Update Stored Rates
-# ---------------------------
+# 3. Rate Updater
 def update_rates():
     st.subheader("🛠️ Update Visiting Card Rates")
     rates = load_rates()
-
     finish = st.selectbox("Select Finish to Update", list(rates.keys()))
     new_rate_500 = st.number_input(f"New Rate for 500 {finish}", value=rates[finish]["500"])
-    new_rate_1000 = st.number_in_
+    new_rate_1000 = st.number_input(f"New Rate for 1000 {finish}", value=rates[finish]["1000"])
+    if st.button("Save Updated Rates"):
+        rates[finish]["500"] = new_rate_500
+        rates[finish]["1000"] = new_rate_1000
+        save_rates(rates)
+        st.success("✅ Rates updated successfully!")
+
+# Main App Navigation
+st.title("🖨️ Vinaayaga Printers Toolkit")
+
+option = st.sidebar.radio("Choose Tool", [
+    "Visiting Card Rate Estimator",
+    "Sheet Size Optimizer",
+    "Update Visiting Card Rates"
+])
+
+if option == "Visiting Card Rate Estimator":
+    rate_estimator()
+elif option == "Sheet Size Optimizer":
+    sheet_size_optimizer()
+else:
+    update_rates()
+'''
+
+# Save this version to file
+final_toolkit_path = "/mnt/data/vinaayaga_printers_toolkit_v4_final.py"
+with open(final_toolkit_path, "w") as f:
+    f.write(final_toolkit_code)
+
+final_toolkit_path
