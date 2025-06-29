@@ -1,9 +1,6 @@
-# Rewriting the full revised Streamlit app with:
-# - Visiting Card Estimator
-# - Sheet Size Optimizer (separate mm/inch for sheet and finish)
-# - Rate Update Module
+# Rewriting the full `app.py` content for GitHub-based Streamlit deployment
 
-final_toolkit_code = '''import streamlit as st
+app_py_code = '''import streamlit as st
 import json
 import os
 
@@ -131,3 +128,9 @@ else:
     update_rates()
 '''
 
+# Save as app.py for GitHub/Streamlit
+app_path = "/mnt/data/app.py"
+with open(app_path, "w") as f:
+    f.write(app_py_code)
+
+app_path
