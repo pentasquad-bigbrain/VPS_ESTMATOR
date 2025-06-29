@@ -78,11 +78,23 @@ def sheet_optimizer():
     total1, total2 = cols1 * rows1, cols2 * rows2
 
     layout = "Original" if total1 >= total2 else "Rotated"
-    total = max(total1, total2)
-    rows = rows1 if total1 >= total2 else rows2
-    cols = cols1 if total1 >= total2 else cols2
+    total = int(max(total1, total2))
+    rows = int(rows1 if total1 >= total2 else rows2)
+    cols = int(cols1 if total1 >= total2 else cols2)
+    used_width = fw if total1 >= total2 else fh
+    used_height = fh if total1 >= total2 else fw
 
-    st.success(f"Layout: {layout} — Total Fit: {int(total)} ({int(rows)} x {int(cols)})")
+    used_area = rows * cols * used_width * used_height
+    sheet_area = sw * sh
+    remaining_area = sheet_area - used_area
+    waste_percent = (remaining_area / sheet_area) * 100
+
+    st.success(f"✅ Layout: {layout}")
+    st.write(f"📦 Cards per sheet: **{total}** ({rows} rows × {cols} cols)")
+    st.markdown("---")
+    st.info(f"🟢 Used Area: {used_area:.0f} mm²")
+    st.warning(f"🔴 Remaining/Waste Area: {remaining_area:.0f} mm² ({waste_percent:.2f}%)")
+
 
 # 3. Flex Estimator
 def flex_estimator():
