@@ -1,62 +1,91 @@
 import streamlit as st
 
-def calculate_fit(sheet_w, sheet_h, finish_w, finish_h):
-    # Fit in original orientation
-    cols_orig = sheet_w // finish_w
-    rows_orig = sheet_h // finish_h
-    total_orig = cols_orig * rows_orig
-    used_w_orig = cols_orig * finish_w
-    used_h_orig = rows_orig * finish_h
-    balance_w_orig = sheet_w - used_w_orig
-    balance_h_orig = sheet_h - used_h_orig
+# -----------------------
+# 1. Visiting Card Estimator
+# -----------------------
+def rate_estimator():
+    st.subheader("🧾 Visiting Card Rate Estimator")
 
-    # Fit in rotated orientation
-    cols_rot = sheet_w // finish_h
-    rows_rot = sheet_h // finish_w
-    total_rot = cols_rot * rows_rot
-    used_w_rot = cols_rot * finish_h
-    used_h_rot = rows_rot * finish_w
-    balance_w_rot = sheet_w - used_w_rot
-    balance_h_rot = sheet_h - used_h_rot
+    rate_lookup = {
+        "Gloss": {500: 400, 1000: 700},
+        "Matte": {500: 450, 1000: 800},
+        "Synthetic": {500: 700, 1000: 1200},
+        "Normal": {500: 300, 1000: 500}
+    }
 
-    if total_orig >= total_rot:
-        return {
-            "layout": "Original Orientation",
-            "total": int(total_orig),
-            "rows": int(rows_orig),
-            "columns": int(cols_orig),
-            "used_w": used_w_orig,
-            "used_h": used_h_orig,
-            "balance_w": balance_w_orig,
-            "balance_h": balance_h_orig
-        }
+    finish = st.selectbox("Select Finish Type", list(rate_lookup.keys()))
+    quantity = st.selectbox("Select Quantity", [500, 1000])
+    base_rate = rate_lookup[finish][quantity]
+
+    st.info(f"Base Rate for {quantity} {finish} cards: ₹{base_rate}")
+
+    if st.radio("Generate final estimate?", ("Yes", "No")) == "Yes":
+        design_charge = st.number_input("Design Charges (₹)", min_value=0, value=0)
+        extra_charge = st.number_input("Extra/Add-on Charges (₹)", min_value=0, value=0)
+        discount = st.number_input("Discount (₹)", min_value=0, value=0)
+        include_tax = st.checkbox("Include GST (18%)")
+
+        subtotal = base_rate + design_charge + extra_charge - discount
+        tax = subtotal * 0.18 if include_tax else 0
+        total = subtotal + tax
+
+        st.success(f"💰 Final Estimate: ₹{total:.2f}")
+        if include_tax:
+            st.caption(f"Includes ₹{tax:.2f} GST (SGST + CGST)")
+
+# -----------------------
+# 2. Sheet Size Optimizer
+# -----------------------
+def sheet_size_optimizer():
+    st.subheader("📐 Sheet-to-Finish Size Optimizer (in mm)")
+
+    sheet_width_mm = st.number_input("Sheet Width (mm)", min_value=100, value=330)
+    sheet_height_mm = st.number_input("Sheet Height (mm)", min_value=100, value=483)
+
+    finish_width_mm = st.number_input("Finish Width (mm)", min_value=10, value=210)
+    finish_height_mm = st.number_input("Finish Height (mm)", min_value=10, value=297)
+
+    # Orientation 1
+    cols1 = sheet_width_mm // finish_width_mm
+    rows1 = sheet_height_mm // finish_height_mm
+    total1 = cols1 * rows1
+    used_w1 = cols1 * finish_width_mm
+    used_h1 = rows1 * finish_height_mm
+    rem_w1 = sheet_width_mm - used_w1
+    rem_h1 = sheet_height_mm - used_h1
+
+    # Orientation 2
+    cols2 = sheet_width_mm // finish_height_mm
+    rows2 = sheet_height_mm // finish_width_mm
+    total2 = cols2 * rows2
+    used_w2 = cols2 * finish_height_mm
+    used_h2 = rows2 * finish_width_mm
+    rem_w2 = sheet_width_mm - used_w2
+    rem_h2 = sheet_height_mm - used_h2
+
+    if total1 >= total2:
+        layout = "Original Orientation"
+        total, rows, cols = total1, rows1, cols1
+        used_w, used_h, rem_w, rem_h = used_w1, used_h1, rem_w1, rem_h1
     else:
-        return {
-            "layout": "Rotated Orientation",
-            "total": int(total_rot),
-            "rows": int(rows_rot),
-            "columns": int(cols_rot),
-            "used_w": used_w_rot,
-            "used_h": used_h_rot,
-            "balance_w": balance_w_rot,
-            "balance_h": balance_h_rot
-        }
+        layout = "Rotated Orientation"
+        total, rows, cols = total2, rows2, cols2
+        used_w, used_h, rem_w, rem_h = used_w2, used_h2, rem_w2, rem_h2
 
-st.title("📐 Sheet-to-Finish Size Optimizer (mm Input)")
+    st.success(f"✅ Best Layout: {layout}")
+    st.write(f"🧾 Total Finish Sizes: **{total}**")
+    st.write(f"📏 Rows: {rows} | Columns: {cols}")
+    st.write(f"🟩 Used Area: {used_w}mm x {used_h}mm")
+    st.write(f"⬜ Remaining Area: {rem_w}mm x {rem_h}mm")
 
-st.markdown("### Step 1: Enter Sheet Size (in millimeters)")
-sheet_width_mm = st.number_input("Sheet Width (mm)", min_value=100, value=330)
-sheet_height_mm = st.number_input("Sheet Height (mm)", min_value=100, value=483)
+# -----------------------
+# App Navigation
+# -----------------------
+st.title("🖨️ Vinaayaga Printers Toolkit")
 
-st.markdown("### Step 2: Enter Finish Size (in millimeters)")
-finish_width_mm = st.number_input("Finish Width (mm)", min_value=10, value=210)
-finish_height_mm = st.number_input("Finish Height (mm)", min_value=10, value=297)
+tool = st.sidebar.radio("Choose Tool", ["Visiting Card Rate Estimator", "Sheet Size Optimizer"])
 
-if st.button("Calculate Fit"):
-    result = calculate_fit(sheet_width_mm, sheet_height_mm, finish_width_mm, finish_height_mm)
-
-    st.success(f"✅ Best Layout: {result['layout']}")
-    st.write(f"🧾 Total Finish Sizes per Sheet: **{result['total']}**")
-    st.write(f"📏 Rows: {result['rows']} | Columns: {result['columns']}")
-    st.write(f"🟩 Used Area: {result['used_w']}mm x {result['used_h']}mm")
-    st.write(f"⬜ Remaining Balance: {result['balance_w']}mm x {result['balance_h']}mm")
+if tool == "Visiting Card Rate Estimator":
+    rate_estimator()
+else:
+    sheet_size_optimizer()
