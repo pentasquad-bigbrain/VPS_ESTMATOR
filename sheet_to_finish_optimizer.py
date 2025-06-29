@@ -1,6 +1,4 @@
-# Rewriting the full `app.py` content for GitHub-based Streamlit deployment
-
-app_py_code = '''import streamlit as st
+import streamlit as st
 import json
 import os
 
@@ -24,7 +22,6 @@ def save_rates(rates):
     with open(RATE_FILE, "w") as f:
         json.dump(rates, f, indent=4)
 
-# 1. Visiting Card Estimator
 def rate_estimator():
     st.subheader("🧾 Visiting Card Rate Estimator")
     rates = load_rates()
@@ -32,19 +29,21 @@ def rate_estimator():
     quantity = st.selectbox("Select Quantity", [500, 1000])
     base_rate = rates[finish][str(quantity)]
     st.info(f"Base Rate for {quantity} {finish} cards: ₹{base_rate}")
+    
     if st.radio("Generate final estimate?", ("Yes", "No")) == "Yes":
         design_charge = st.number_input("Design Charges (₹)", min_value=0, value=0)
         extra_charge = st.number_input("Extra/Add-on Charges (₹)", min_value=0, value=0)
         discount = st.number_input("Discount (₹)", min_value=0, value=0)
         include_tax = st.checkbox("Include GST (18%)")
+        
         subtotal = base_rate + design_charge + extra_charge - discount
         tax = subtotal * 0.18 if include_tax else 0
         total = subtotal + tax
+        
         st.success(f"💰 Final Estimate: ₹{total:.2f}")
         if include_tax:
             st.caption(f"Includes ₹{tax:.2f} GST (SGST + CGST)")
 
-# 2. Sheet-to-Finish Optimizer
 def sheet_size_optimizer():
     st.subheader("📐 Sheet-to-Finish Size Optimizer")
 
@@ -98,7 +97,6 @@ def sheet_size_optimizer():
     st.write(f"🟩 Used Area: {used_w:.1f} mm x {used_h:.1f} mm")
     st.write(f"⬜ Remaining Area: {rem_w:.1f} mm x {rem_h:.1f} mm")
 
-# 3. Rate Updater
 def update_rates():
     st.subheader("🛠️ Update Visiting Card Rates")
     rates = load_rates()
@@ -111,7 +109,7 @@ def update_rates():
         save_rates(rates)
         st.success("✅ Rates updated successfully!")
 
-# Main App Navigation
+# App Navigation
 st.title("🖨️ Vinaayaga Printers Toolkit")
 
 option = st.sidebar.radio("Choose Tool", [
@@ -126,11 +124,3 @@ elif option == "Sheet Size Optimizer":
     sheet_size_optimizer()
 else:
     update_rates()
-'''
-
-# Save as app.py for GitHub/Streamlit
-app_path = "/mnt/data/app.py"
-with open(app_path, "w") as f:
-    f.write(app_py_code)
-
-app_path
