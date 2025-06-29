@@ -60,40 +60,64 @@ def rate_estimator():
 
 # 2. Sheet Size Optimizer
 def sheet_optimizer():
-    st.subheader("📐 Sheet Optimizer")
+    st.subheader("📐 Sheet Size Optimizer")
+
     unit1 = st.radio("Sheet Size Unit", ["mm", "in"], horizontal=True)
     unit2 = st.radio("Finish Size Unit", ["mm", "in"], horizontal=True)
 
     def to_mm(val, unit): return val * 25.4 if unit == "in" else val
-    sw = st.number_input("Sheet Width", 1.0)
-    sh = st.number_input("Sheet Height", 1.0)
-    fw = st.number_input("Finish Width", 1.0)
-    fh = st.number_input("Finish Height", 1.0)
+
+    # Input sizes
+    sw = st.number_input("Sheet Width", 1.0, step=1.0)
+    sh = st.number_input("Sheet Height", 1.0, step=1.0)
+    fw = st.number_input("Finish Width", 1.0, step=1.0)
+    fh = st.number_input("Finish Height", 1.0, step=1.0)
 
     sw, sh = to_mm(sw, unit1), to_mm(sh, unit1)
     fw, fh = to_mm(fw, unit2), to_mm(fh, unit2)
 
+    # Layout 1: Normal
     cols1, rows1 = sw // fw, sh // fh
+    total1 = cols1 * rows1
+
+    # Layout 2: Rotated
     cols2, rows2 = sw // fh, sh // fw
-    total1, total2 = cols1 * rows1, cols2 * rows2
+    total2 = cols2 * rows2
 
-    layout = "Original" if total1 >= total2 else "Rotated"
-    total = int(max(total1, total2))
-    rows = int(rows1 if total1 >= total2 else rows2)
-    cols = int(cols1 if total1 >= total2 else cols2)
-    used_width = fw if total1 >= total2 else fh
-    used_height = fh if total1 >= total2 else fw
+    # Pick best layout
+    if total1 >= total2:
+        layout = "Original (W x H)"
+        total_fit = int(total1)
+        rows, cols = int(rows1), int(cols1)
+        used_w, used_h = fw, fh
+    else:
+        layout = "Rotated (H x W)"
+        total_fit = int(total2)
+        rows, cols = int(rows2), int(cols2)
+        used_w, used_h = fh, fw
 
-    used_area = rows * cols * used_width * used_height
+    used_area = rows * cols * used_w * used_h
     sheet_area = sw * sh
     remaining_area = sheet_area - used_area
-    waste_percent = (remaining_area / sheet_area) * 100
+    remaining_percent = (remaining_area / sheet_area) * 100
 
-    st.success(f"✅ Layout: {layout}")
-    st.write(f"📦 Cards per sheet: **{total}** ({rows} rows × {cols} cols)")
+    # Display layout
+    st.success(f"✅ Best Layout: {layout}")
+    st.write(f"📦 Fits per sheet: **{total_fit} cards** ({rows} rows × {cols} cols)")
     st.markdown("---")
+
     st.info(f"🟢 Used Area: {used_area:.0f} mm²")
-    st.warning(f"🔴 Remaining/Waste Area: {remaining_area:.0f} mm² ({waste_percent:.2f}%)")
+    st.warning(f"🔴 Waste Area: {remaining_area:.0f} mm² ({remaining_percent:.2f}%)")
+
+    st.markdown("---")
+    # Quantity calc
+    total_cards = st.number_input("Enter Total Cards Required (optional)", min_value=0, step=1)
+    if total_cards > 0:
+        sheets_needed = (total_cards + total_fit - 1) // total_fit  # ceiling
+        total_yield = sheets_needed * total_fit
+        st.success(f"🧮 Sheets Required: {sheets_needed}")
+        st.caption(f"🔁 Total Yield: {total_yield} cards (includes surplus of {total_yield - total_cards})")
+
 
 
 # 3. Flex Estimator
