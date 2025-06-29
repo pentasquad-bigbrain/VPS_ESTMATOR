@@ -131,9 +131,3 @@ else:
     update_rates()
 '''
 
-# Save this version to file
-final_toolkit_path = "/mnt/data/vinaayaga_printers_toolkit_v4_final.py"
-with open(final_toolkit_path, "w") as f:
-    f.write(final_toolkit_code)
-
-final_toolkit_path
