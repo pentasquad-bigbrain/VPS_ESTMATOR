@@ -33,45 +33,50 @@ def rate_estimator():
         if include_tax:
             st.caption(f"Includes ₹{tax:.2f} GST (SGST + CGST)")
 
-
 # -----------------------
-# 2. Sheet Size Optimizer with Unit Switch
+# 2. Sheet Size Optimizer
 # -----------------------
 def sheet_size_optimizer():
     st.subheader("📐 Sheet-to-Finish Size Optimizer")
 
-    unit = st.radio("Select Unit", ("Millimeters (mm)", "Inches (in)"))
-    multiplier = 1 if unit == "Millimeters (mm)" else 25.4
-    unit_label = "mm" if unit == "Millimeters (mm)" else "in"
+    unit = st.radio("Choose Unit", ("Millimeters (mm)", "Inches (in)"))
 
-    sheet_width = st.number_input(f"Sheet Width ({unit_label})", min_value=1.0, value=330.0)
-    sheet_height = st.number_input(f"Sheet Height ({unit_label})", min_value=1.0, value=483.0)
-    finish_width = st.number_input(f"Finish Width ({unit_label})", min_value=1.0, value=210.0)
-    finish_height = st.number_input(f"Finish Height ({unit_label})", min_value=1.0, value=297.0)
+    def to_mm(value, unit):
+        return value * 25.4 if unit == "Inches (in)" else value
 
-    # Convert all inputs to mm
-    sheet_w = sheet_width * multiplier
-    sheet_h = sheet_height * multiplier
-    finish_w = finish_width * multiplier
-    finish_h = finish_height * multiplier
+    if unit == "Millimeters (mm)":
+        sheet_width = st.number_input("Sheet Width (mm)", min_value=100.0, value=330.0)
+        sheet_height = st.number_input("Sheet Height (mm)", min_value=100.0, value=483.0)
+        finish_width = st.number_input("Finish Width (mm)", min_value=10.0, value=210.0)
+        finish_height = st.number_input("Finish Height (mm)", min_value=10.0, value=297.0)
+    else:
+        sheet_width = st.number_input("Sheet Width (in)", min_value=4.0, value=13.0)
+        sheet_height = st.number_input("Sheet Height (in)", min_value=4.0, value=19.0)
+        finish_width = st.number_input("Finish Width (in)", min_value=1.0, value=8.27)
+        finish_height = st.number_input("Finish Height (in)", min_value=1.0, value=11.7)
+
+    sw_mm = to_mm(sheet_width, unit)
+    sh_mm = to_mm(sheet_height, unit)
+    fw_mm = to_mm(finish_width, unit)
+    fh_mm = to_mm(finish_height, unit)
 
     # Orientation 1
-    cols1 = sheet_w // finish_w
-    rows1 = sheet_h // finish_h
+    cols1 = sw_mm // fw_mm
+    rows1 = sh_mm // fh_mm
     total1 = cols1 * rows1
-    used_w1 = cols1 * finish_w
-    used_h1 = rows1 * finish_h
-    rem_w1 = sheet_w - used_w1
-    rem_h1 = sheet_h - used_h1
+    used_w1 = cols1 * fw_mm
+    used_h1 = rows1 * fh_mm
+    rem_w1 = sw_mm - used_w1
+    rem_h1 = sh_mm - used_h1
 
     # Orientation 2
-    cols2 = sheet_w // finish_h
-    rows2 = sheet_h // finish_w
+    cols2 = sw_mm // fh_mm
+    rows2 = sh_mm // fw_mm
     total2 = cols2 * rows2
-    used_w2 = cols2 * finish_h
-    used_h2 = rows2 * finish_w
-    rem_w2 = sheet_w - used_w2
-    rem_h2 = sheet_h - used_h2
+    used_w2 = cols2 * fh_mm
+    used_h2 = rows2 * fw_mm
+    rem_w2 = sw_mm - used_w2
+    rem_h2 = sh_mm - used_h2
 
     if total1 >= total2:
         layout = "Original Orientation"
@@ -87,7 +92,6 @@ def sheet_size_optimizer():
     st.write(f"📏 Rows: {int(rows)} | Columns: {int(cols)}")
     st.write(f"🟩 Used Area: {used_w:.1f}mm x {used_h:.1f}mm")
     st.write(f"⬜ Remaining Area: {rem_w:.1f}mm x {rem_h:.1f}mm")
-
 
 # -----------------------
 # App Navigation
