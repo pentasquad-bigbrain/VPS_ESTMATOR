@@ -105,16 +105,32 @@ def update_rates():
         save_rates(rates)
         st.success("✅ Rates updated successfully!")
 
-def flex_estimator():
-    st.subheader("📏 Flex Rate Estimator")
-    flex_types = {
+
+
+def load_flex_rates():
+    default_flex_rates = {
         "Normal Flex": 12,
         "Backlit Flex": 25,
         "Blackout Flex": 35,
         "Vinyl Print": 40
     }
-    flex_type = st.selectbox("Select Flex Type", list(flex_types.keys()))
-    rate_per_sqft = flex_types[flex_type]
+    if os.path.exists("flex_rates.json"):
+        with open("flex_rates.json", "r") as f:
+            return json.load(f)
+    return default_flex_rates
+
+def save_flex_rates(rates):
+    with open("flex_rates.json", "w") as f:
+        json.dump(rates, f, indent=4)
+
+def flex_estimator():
+    st.subheader("📏 Flex Rate Estimator")
+    flex_rates = load_flex_rates()
+    options_with_rates = [f"{k} (₹{v}/sq.ft)" for k, v in flex_rates.items()]
+    choice = st.selectbox("Select Flex Type", options_with_rates)
+    flex_type = choice.split(" (")[0]
+    rate_per_sqft = flex_rates[flex_type]
+
     num_flex = st.number_input("Number of Flex Pieces", min_value=1, value=1, step=1)
     dimension_unit = st.radio("Dimension Unit", ("Feet", "Inches"))
     total_sqft = 0
@@ -134,20 +150,12 @@ def flex_estimator():
     st.write(f"🧮 **Total Area:** {total_sqft:.2f} sq.ft")
     st.write(f"💰 **Total Price:** ₹{total_rate:.2f}")
 
-# App Navigation
-st.title("🖨️ Vinaayaga Printers Toolkit")
-option = st.sidebar.radio("Choose Tool", [
-    "Visiting Card Rate Estimator",
-    "Sheet Size Optimizer",
-    "Flex Rate Estimator",
-    "Update Visiting Card Rates"
-])
-
-if option == "Visiting Card Rate Estimator":
-    rate_estimator()
-elif option == "Sheet Size Optimizer":
-    sheet_size_optimizer()
-elif option == "Flex Rate Estimator":
-    flex_estimator()
-else:
-    update_rates()
+def update_flex_rates():
+    st.subheader("🛠️ Update Flex Rates")
+    flex_rates = load_flex_rates()
+    flex = st.selectbox("Select Flex Type to Update", list(flex_rates.keys()))
+    new_rate = st.number_input(f"New Rate for {flex} (₹/sq.ft)", value=flex_rates[flex])
+    if st.button("Save Flex Rate"):
+        flex_rates[flex] = new_rate
+        save_flex_rates(flex_rates)
+        st.success(f"✅ Updated rate for {flex} to ₹{new_rate}/sq.ft")
