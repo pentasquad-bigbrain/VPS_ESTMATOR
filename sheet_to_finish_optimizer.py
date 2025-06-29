@@ -1,4 +1,12 @@
-import streamlit as st
+# Rewriting the entire `app.py` again to include:
+# - Visiting Card Estimator
+# - Sheet Size Optimizer
+# - Rate Updater
+# - Flex Rate Estimator
+
+# This will be the final version you can deploy via GitHub/Streamlit Cloud
+
+full_app_with_flex = '''import streamlit as st
 import json
 import os
 
@@ -29,24 +37,20 @@ def rate_estimator():
     quantity = st.selectbox("Select Quantity", [500, 1000])
     base_rate = rates[finish][str(quantity)]
     st.info(f"Base Rate for {quantity} {finish} cards: ₹{base_rate}")
-    
     if st.radio("Generate final estimate?", ("Yes", "No")) == "Yes":
         design_charge = st.number_input("Design Charges (₹)", min_value=0, value=0)
         extra_charge = st.number_input("Extra/Add-on Charges (₹)", min_value=0, value=0)
         discount = st.number_input("Discount (₹)", min_value=0, value=0)
         include_tax = st.checkbox("Include GST (18%)")
-        
         subtotal = base_rate + design_charge + extra_charge - discount
         tax = subtotal * 0.18 if include_tax else 0
         total = subtotal + tax
-        
         st.success(f"💰 Final Estimate: ₹{total:.2f}")
         if include_tax:
             st.caption(f"Includes ₹{tax:.2f} GST (SGST + CGST)")
 
 def sheet_size_optimizer():
     st.subheader("📐 Sheet-to-Finish Size Optimizer")
-
     col1, col2 = st.columns(2)
     with col1:
         sheet_unit = st.radio("Sheet Unit", ("Millimeters (mm)", "Inches (in)"), key="sheet_unit")
@@ -109,12 +113,41 @@ def update_rates():
         save_rates(rates)
         st.success("✅ Rates updated successfully!")
 
+def flex_estimator():
+    st.subheader("📏 Flex Rate Estimator")
+    flex_types = {
+        "Normal Flex": 12,
+        "Backlit Flex": 25,
+        "Blackout Flex": 35,
+        "Vinyl Print": 40
+    }
+    flex_type = st.selectbox("Select Flex Type", list(flex_types.keys()))
+    rate_per_sqft = flex_types[flex_type]
+    num_flex = st.number_input("Number of Flex Pieces", min_value=1, value=1, step=1)
+    dimension_unit = st.radio("Dimension Unit", ("Feet", "Inches"))
+    total_sqft = 0
+    for i in range(1, num_flex + 1):
+        st.markdown(f"**Flex {i}**")
+        width = st.number_input(f"Width of Flex {i} ({dimension_unit})", min_value=0.1, key=f"w{i}")
+        height = st.number_input(f"Height of Flex {i} ({dimension_unit})", min_value=0.1, key=f"h{i}")
+        w_ft = width / 12 if dimension_unit == "Inches" else width
+        h_ft = height / 12 if dimension_unit == "Inches" else height
+        area = w_ft * h_ft
+        total_sqft += area
+        st.write(f"📐 Area of Flex {i}: {area:.2f} sq.ft")
+    with_frame = st.checkbox("Include Frame (₹35/sq.ft extra)?")
+    frame_rate = 35 if with_frame else 0
+    total_rate = (rate_per_sqft + frame_rate) * total_sqft
+    st.markdown("---")
+    st.write(f"🧮 **Total Area:** {total_sqft:.2f} sq.ft")
+    st.write(f"💰 **Total Price:** ₹{total_rate:.2f}")
+
 # App Navigation
 st.title("🖨️ Vinaayaga Printers Toolkit")
-
 option = st.sidebar.radio("Choose Tool", [
     "Visiting Card Rate Estimator",
     "Sheet Size Optimizer",
+    "Flex Rate Estimator",
     "Update Visiting Card Rates"
 ])
 
@@ -122,5 +155,15 @@ if option == "Visiting Card Rate Estimator":
     rate_estimator()
 elif option == "Sheet Size Optimizer":
     sheet_size_optimizer()
+elif option == "Flex Rate Estimator":
+    flex_estimator()
 else:
     update_rates()
+'''
+
+# Save this as the final deployable app
+final_app_path = "/mnt/data/app.py"
+with open(final_app_path, "w") as f:
+    f.write(full_app_with_flex)
+
+final_app_path
