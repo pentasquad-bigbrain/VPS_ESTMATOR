@@ -1,12 +1,4 @@
-# Rewriting the entire `app.py` again to include:
-# - Visiting Card Estimator
-# - Sheet Size Optimizer
-# - Rate Updater
-# - Flex Rate Estimator
-
-# This will be the final version you can deploy via GitHub/Streamlit Cloud
-
-full_app_with_flex = '''import streamlit as st
+import streamlit as st
 import json
 import os
 
@@ -159,11 +151,3 @@ elif option == "Flex Rate Estimator":
     flex_estimator()
 else:
     update_rates()
-'''
-
-# Save this as the final deployable app
-final_app_path = "/mnt/data/app.py"
-with open(final_app_path, "w") as f:
-    f.write(full_app_with_flex)
-
-final_app_path
