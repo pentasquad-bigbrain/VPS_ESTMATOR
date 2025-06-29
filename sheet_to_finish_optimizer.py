@@ -1,21 +1,43 @@
 import streamlit as st
 
 # -----------------------
+# Persistent Rate Store
+# -----------------------
+import json
+import os
+
+RATE_FILE = "rates.json"
+
+# Default rates
+default_rates = {
+    "Gloss": { "500": 400, "1000": 700 },
+    "Matte": { "500": 450, "1000": 800 },
+    "Synthetic": { "500": 700, "1000": 1200 },
+    "Normal": { "500": 300, "1000": 500 }
+}
+
+# Load or initialize rate data
+def load_rates():
+    if os.path.exists(RATE_FILE):
+        with open(RATE_FILE, "r") as f:
+            return json.load(f)
+    else:
+        return default_rates.copy()
+
+def save_rates(rates):
+    with open(RATE_FILE, "w") as f:
+        json.dump(rates, f, indent=4)
+
+# -----------------------
 # 1. Visiting Card Estimator
 # -----------------------
 def rate_estimator():
     st.subheader("🧾 Visiting Card Rate Estimator")
 
-    rate_lookup = {
-        "Gloss": {500: 400, 1000: 700},
-        "Matte": {500: 450, 1000: 800},
-        "Synthetic": {500: 700, 1000: 1200},
-        "Normal": {500: 300, 1000: 500}
-    }
-
-    finish = st.selectbox("Select Finish Type", list(rate_lookup.keys()))
+    rates = load_rates()
+    finish = st.selectbox("Select Finish Type", list(rates.keys()))
     quantity = st.selectbox("Select Quantity", [500, 1000])
-    base_rate = rate_lookup[finish][quantity]
+    base_rate = rates[finish][str(quantity)]
 
     st.info(f"Base Rate for {quantity} {finish} cards: ₹{base_rate}")
 
@@ -94,13 +116,36 @@ def sheet_size_optimizer():
     st.write(f"⬜ Remaining Area: {rem_w:.1f}mm x {rem_h:.1f}mm")
 
 # -----------------------
-# App Navigation
+# 3. Rate Updater
+# -----------------------
+def update_rates():
+    st.subheader("🛠️ Update Visiting Card Rates")
+    rates = load_rates()
+
+    selected_finish = st.selectbox("Select Finish to Update", list(rates.keys()))
+    new_500 = st.number_input(f"New Rate for 500 ({selected_finish})", value=rates[selected_finish]["500"])
+    new_1000 = st.number_input(f"New Rate for 1000 ({selected_finish})", value=rates[selected_finish]["1000"])
+
+    if st.button("Save Updated Rates"):
+        rates[selected_finish]["500"] = new_500
+        rates[selected_finish]["1000"] = new_1000
+        save_rates(rates)
+        st.success("✅ Rates updated successfully!")
+
+# -----------------------
+# Main Navigation
 # -----------------------
 st.title("🖨️ Vinaayaga Printers Toolkit")
 
-tool = st.sidebar.radio("Choose Tool", ["Visiting Card Rate Estimator", "Sheet Size Optimizer"])
+tool = st.sidebar.radio("Choose Tool", [
+    "Visiting Card Rate Estimator",
+    "Sheet Size Optimizer",
+    "Update Visiting Card Rates"
+])
 
 if tool == "Visiting Card Rate Estimator":
     rate_estimator()
-else:
+elif tool == "Sheet Size Optimizer":
     sheet_size_optimizer()
+else:
+    update_rates()
